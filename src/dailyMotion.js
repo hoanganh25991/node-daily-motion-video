@@ -90,7 +90,7 @@ export const getVideoUrl = async dailyVideoUrl => {
     _("[qualities]", qualities)
 
     const urls = getQualitiesMp4Url(qualities)
-    _("[urls]", urls)
+    // _("[urls]", urls)
 
     const finalUrls = {}
 
