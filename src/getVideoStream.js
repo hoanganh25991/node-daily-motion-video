@@ -7,12 +7,14 @@ const axios = Oaxios.create({
   validateStatus: status => status !== 500
 })
 
+const _ = console.log
+
 export const getVideoStream = async url => {
   const streamOpt = { url, method: "get", responseType: "stream" }
   const videoStream = await axios(streamOpt)
     .then(res => res.data)
     .catch(err => {
-      console.log("[axios call][ERR]", err)
+      _("[axios call][ERR]", err)
       return null
     })
 
