@@ -13,7 +13,7 @@ const infoTestStatus = (pass, testCase) =>
   try {
     const videoInfos = await getVideoInfos(dailyUrl)
     _("[videoInfos]", videoInfos)
-    pass = videoInfos && Object.keys(videoInfos).length > 0
+    pass = videoInfos && videoInfos.length > 0
   } catch (err) {
     _(`[${TEST_CASE}][ERR]`, err.message)
     pass = false

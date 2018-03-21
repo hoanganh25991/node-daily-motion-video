@@ -1,6 +1,6 @@
 import Oaxios from "axios"
 
-const ALLOW_TIMEOUT = 3000 //3s
+const ALLOW_TIMEOUT = 6000 //6s
 const axios = Oaxios.create({
   timeout: ALLOW_TIMEOUT,
   validateStatus: status => status !== 500
@@ -66,6 +66,7 @@ export const getQualitiesMp4Url = qualities => {
 
 /**
  * Follow redirect to get final download url
+ * @param quality
  * @param url
  * @return {Promise.<*>}
  */
@@ -102,45 +103,26 @@ export const getVideoInfo = async ({ quality, url }) => {
 
 /**
  * Get real Daily motion download video from Daily motion link
- * @return {Promise.<{}>}
- * @param qualities
+ * @param dailyVideoUrl
+ * @return {Promise.<Array>}
  */
-export const getVideoInfos = async qualities => {
+export const getVideoInfos = async dailyVideoUrl => {
   try {
+    const html = await fetchHtml(dailyVideoUrl)
+    const qualitiesStr = getMetaDataQualitiesStr(html)
+    const qualities = JSON.parse(qualitiesStr)
     const urls = getQualitiesMp4Url(qualities)
     const videoInfos = {}
     const waitList = Object.keys(urls).map(async quality => {
       const url = urls[quality]
-      const finalUrl = await getVideoInfo({ quality, url })
-      videoInfos[quality] = finalUrl
+      const videoInfo = await getVideoInfo({ quality, url })
+      videoInfos[quality] = videoInfo
     })
 
     await Promise.all(waitList)
-    return videoInfos
+    return Object.values(videoInfos)
   } catch (err) {
     _("[getVideoInfos][ERR]", err.message)
-    return null
-  }
-}
-
-/**
- *
- * @param dailyVideoUrl
- * @return {Promise.<null>}
- */
-export const getVideoUrl = async dailyVideoUrl => {
-  try {
-    const html = await fetchHtml(dailyVideoUrl)
-    const qualitiesStr = getMetaDataQualitiesStr(html)
-    if (!qualitiesStr) {
-      _("[getVideoInfos] Fail to find qualitiesStr")
-      return null
-    }
-
-    const qualities = JSON.parse(qualitiesStr)
-    const videoInfos = await getVideoInfos(qualities)
-  } catch (err) {
-    _("[getVideoUrl][ERR]", err.message)
     return null
   }
 }
