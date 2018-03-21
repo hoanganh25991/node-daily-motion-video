@@ -1,113 +1,146 @@
 import Oaxios from "axios"
 
-const ALLOW_TIMEOUT = 120 * 60 * 1000 // 120m = 2h
-
+const ALLOW_TIMEOUT = 3000 //3s
 const axios = Oaxios.create({
   timeout: ALLOW_TIMEOUT,
   validateStatus: status => status !== 500
 })
-
-const CancelToken = Oaxios.CancelToken;
-
 const _ = console.log
-const ACCEPT_VIDEO_FORMAT = "video/mp4"
 const ACCEPT_QUALITY = 480
+const ACCEPT_VIDEO_FORMAT = "video/mp4"
+const CancelToken = Oaxios.CancelToken
 
+/**
+ * Fetch Daily motion page
+ * @param url
+ * @return {Promise.<null>}
+ */
 export const fetchHtml = async url => {
-  try{
+  try {
     const res = await axios.get(url)
     const html = res.data
     // _("[fetchHtml][html]", html)
     return html
-  }catch(err){
+  } catch (err) {
     _("[fetchHtml][ERR]", err.message)
     return null
   }
 }
 
+/**
+ * Extract qualities info from html page
+ * @param html
+ * @return string|null
+ */
 export const getMetaDataQualitiesStr = html => {
-  try{
-    _("[getMetaDataQualitiesStr][html]", html.length)
-    const metaQualitiesPattern = /"qualities":(.*?}),"/;
+  try {
+    const metaQualitiesPattern = /"qualities":(.*?}),"/
     const matches = html.match(metaQualitiesPattern)
     const qualitiesStr = matches[1]
     return qualitiesStr
-  }catch(err){
+  } catch (err) {
     _("[getMetaDataQualitiesStr][ERR]", err.message)
     return null
   }
 }
 
-
+/**
+ * Get mp4 url
+ * @param qualities
+ * @return {*}
+ */
 export const getQualitiesMp4Url = qualities => {
   return Object.keys(qualities).reduce((carry, key) => {
     const isAcceptedQuality = +key >= ACCEPT_QUALITY
-    if(!isAcceptedQuality) return carry
+    if (!isAcceptedQuality) return carry
 
     const videos = qualities[key]
     const firstMp4Video = videos.filter(video => video.type === ACCEPT_VIDEO_FORMAT)[0]
-    if(!firstMp4Video) return carry
+    if (!firstMp4Video) return carry
 
-    const {url } = firstMp4Video
+    const { url } = firstMp4Video
     carry[key] = url
     return carry
   }, {})
 }
 
+/**
+ * Follow redirect to get final download url
+ * @param url
+ * @return {Promise.<*>}
+ */
+export const getVideoInfo = async ({ quality, url }) => {
+  const source = CancelToken.source()
 
-export const getFinalRedirectUrl = async url => {
-  const source = CancelToken.source();
-
-  try{
-    const streamOpt = { url, method: "get", responseType: "stream", cancelToken: source.token}
-    const finalUrl = await axios(streamOpt)
+  try {
+    const streamOpt = { url, method: "get", responseType: "stream", cancelToken: source.token }
+    const videoInfo = await axios(streamOpt)
       .then(res => {
-        // const now = new Date().getTime()
         const finalUrl = res.request.res.responseUrl
-        // _("[chunk,now]", finalUrl, now)
+        const size = res.request.res.headers["content-length"]
+        const sizeInMB = size && (+size / 1000000).toFixed(2)
+        const sizeWithMB = size && `${sizeInMB}MB`
         source.cancel("Ok, just get redirect url, dont fetch it")
-        return finalUrl
+        return {
+          ext: "MP4",
+          size: sizeWithMB,
+          url: finalUrl,
+          quality
+        }
       })
       .catch(err => {
-        _("[getFinalRedirectUrl][ERR]", err)
+        _("[getVideoInfo][ERR]", err)
         return null
       })
 
-    // const now = new Date().getTime()
-    // _("[finalUrl, now]", finalUrl, now)
-    return finalUrl
-  }catch(err){
-    _("[getFinalRedirectUrl][ERR]", err.message)
+    return videoInfo
+  } catch (err) {
+    _("[getVideoInfo][ERR]", err.message)
     return null
   }
 }
 
-export const getVideoUrl = async dailyVideoUrl => {
-  try{
-    const html = await fetchHtml(dailyVideoUrl)
-    const qualitiesStr = getMetaDataQualitiesStr(html)
-    const qualities = JSON.parse(qualitiesStr)
-    _("[qualities]", qualities)
-
+/**
+ * Get real Daily motion download video from Daily motion link
+ * @return {Promise.<{}>}
+ * @param qualities
+ */
+export const getVideoInfos = async qualities => {
+  try {
     const urls = getQualitiesMp4Url(qualities)
-    // _("[urls]", urls)
-
-    const finalUrls = {}
-
-    const waitList = Object.keys(urls).map(async key => {
-      const url = urls[key]
-      const finalUrl = await getFinalRedirectUrl(url)
-      finalUrls[key] = finalUrl
+    const videoInfos = {}
+    const waitList = Object.keys(urls).map(async quality => {
+      const url = urls[quality]
+      const finalUrl = await getVideoInfo({ quality, url })
+      videoInfos[quality] = finalUrl
     })
 
     await Promise.all(waitList)
+    return videoInfos
+  } catch (err) {
+    _("[getVideoInfos][ERR]", err.message)
+    return null
+  }
+}
 
-    _("[finalUrls]", finalUrls)
+/**
+ *
+ * @param dailyVideoUrl
+ * @return {Promise.<null>}
+ */
+export const getVideoUrl = async dailyVideoUrl => {
+  try {
+    const html = await fetchHtml(dailyVideoUrl)
+    const qualitiesStr = getMetaDataQualitiesStr(html)
+    if (!qualitiesStr) {
+      _("[getVideoInfos] Fail to find qualitiesStr")
+      return null
+    }
 
-    return qualities
-  }catch(err){
+    const qualities = JSON.parse(qualitiesStr)
+    const videoInfos = await getVideoInfos(qualities)
+  } catch (err) {
     _("[getVideoUrl][ERR]", err.message)
     return null
   }
 }
-

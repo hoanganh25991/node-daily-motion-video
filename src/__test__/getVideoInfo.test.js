@@ -1,4 +1,4 @@
-import { fetchHtml } from "../dailyMotion"
+import { getVideoInfo } from "../dailyMotion"
 
 const _ = console.log
 const infoTestStatus = (pass, testCase) =>
@@ -7,12 +7,12 @@ const infoTestStatus = (pass, testCase) =>
 // Run test
 ;(async () => {
   const TEST_CASE = "Fetch daily motion page"
-  const dailyUrl = "https://www.dailymotion.com/video/x6gfvbd"
+  const dailyUrl = "https://tinker.press/redirect.php"
   let pass = true
 
   try {
-    const html = await fetchHtml(dailyUrl)
-    pass = html && html.length > 0
+    const { url } = await getVideoInfo({ quality: 720, url: dailyUrl })
+    pass = url && url === "https://tinker.press/videos/def.mp4"
   } catch (err) {
     _(`[${TEST_CASE}][ERR]`, err.message)
     pass = false
