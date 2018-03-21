@@ -4,7 +4,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hoanganh25991/node-daily-motion-video"
+    "url": "git+https://github.com/hoanganh25991/node-daily-motion-video"
   },
   "main": "dist/dailyMotion.js",
   "devDependencies": {
