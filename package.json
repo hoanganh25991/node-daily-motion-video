@@ -1,12 +1,12 @@
 {
-	"name": "daily-motion-video",
-	"version": "0.0.1",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/hoanganh25991/node-daily-motion-video"
-	},
-	"main": "dist/dailyMotion.js",
+  "name": "daily-motion-video",
+  "version": "0.0.2",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoanganh25991/node-daily-motion-video"
+  },
+  "main": "dist/dailyMotion.js",
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-plugin-inline-json-import": "^0.2.1",
@@ -26,7 +26,7 @@
   },
   "scripts": {
     "precommit": "lint-staged",
-    "start": "babel-node scripts/deploy.js && node dist/server.js",
+    "build": "babel-node scripts/build.js",
     "babel-node": "babel-node",
     "bn": "babel-node",
     "test": "babel-node scripts/run-test.js"
