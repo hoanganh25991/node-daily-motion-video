@@ -6,7 +6,7 @@ const infoTestStatus = (pass, testCase) =>
 
 // Run test
 ;(async () => {
-  const TEST_CASE = "Fetch daily motion page"
+  const TEST_CASE = "Get final url with video info"
   const dailyUrl = "https://tinker.press/redirect.php"
   let pass = true
 
